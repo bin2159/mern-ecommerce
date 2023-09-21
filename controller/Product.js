@@ -3,7 +3,7 @@ const { Product } = require('../model/Product')
 exports.createProduct = async(req, res) => {
   try{
     const product=await Product.create(req.body)
-    res.status(200).json(product)
+    res.status(201).json(product)
   }
   catch(error){
     res.status(400).json({message:error.message})
@@ -11,8 +11,8 @@ exports.createProduct = async(req, res) => {
 }
 
 exports.fetchAllProducts=async(req,res)=>{
-  let query=Product.find({})
-  let totalProductsQuery=Product.find({})
+  let query=Product.find({delete:{$ne:true}})
+  let totalProductsQuery=Product.find({delete:{$ne:true}})
   if(req.query.category){
     query=query.find({category:req.query.category})
     totalProductsQuery=totalProductsQuery.find({category:req.query.category})

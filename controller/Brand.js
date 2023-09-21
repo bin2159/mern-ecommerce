@@ -12,7 +12,7 @@ exports.fetchAllBrands=async(req,res)=>{
 exports.createBrands=async(req,res)=>{
     try {
     const brands=await Brand.create(req.body)
-      res.status(200).json(brands)  
+      res.status(201).json(brands)  
     } catch (error) {
         res.status(400).json({message:error.message})
     }

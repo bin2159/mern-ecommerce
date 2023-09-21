@@ -10,7 +10,7 @@ const virtual=brandSchema.virtual('id')
 virtual.get(function(){
     return this._id
 })
-virtual.set('toJSON',{
+brandSchema.set('toJSON',{
     virtual:true,
     versionKey:false,
     transform:function(doc,ref){
