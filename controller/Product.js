@@ -11,8 +11,12 @@ exports.createProduct = async(req, res) => {
 }
 
 exports.fetchAllProducts=async(req,res)=>{
-  let query=Product.find({delete:{$ne:true}})
-  let totalProductsQuery=Product.find({delete:{$ne:true}})
+  let condition={}
+  if(!req.query.admin){
+    condition.deleted={$ne:true}
+  }
+  let query=Product.find(condition)
+  let totalProductsQuery=Product.find(condition)
   if(req.query.category){
     query=query.find({category:req.query.category})
     totalProductsQuery=totalProductsQuery.find({category:req.query.category})
@@ -55,6 +59,7 @@ exports.fetchAllProductsById=async(req,res)=>{
 }
 
 exports.updateProduct=async(req,res)=>{
+  console.log(req.body)
   try {
   const product=await Product.findByIdAndUpdate(req.params.id,req.body,{new:true})
   res.status(200).json(product)
