@@ -54,6 +54,7 @@ exports.loginUser = async (req, res) => {
 }
 
 exports.checkAuth = (req, res) => {
+  console.log("rfhx",req.user)
   if (req.user) {
     res.json(req.user)
   }else{

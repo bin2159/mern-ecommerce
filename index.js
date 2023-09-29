@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express')
 const mongoose = require('mongoose')
 const morgan = require('morgan')
@@ -7,9 +8,9 @@ const passport = require('passport')
 const LocalStrategy = require('passport-local').Strategy
 const crypto = require('crypto')
 const JwtStrategy = require('passport-jwt').Strategy
-const ExtractJwt = require('passport-jwt').ExtractJwt
 const jwt = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
+const path =require('path')
 
 const { productRouter } = require('./routes/Product')
 const { brandRouter } = require('./routes/Brand')
@@ -23,17 +24,48 @@ const { isAuth, sanitizeUser, cookieExtrator } = require('./services/common')
 
 const app = express()
 
-const SECRET_KEY = 'SECRET_KEY'
 
 const opts = {}
 opts.jwtFromRequest = cookieExtrator
-opts.secretOrKey = SECRET_KEY
+opts.secretOrKey = process.env.JWT_SECRET_KEY
 
-app.use(express.static('build'))
+const endpointSecret = process.env.ENDPOINT_SECRET;
+
+app.post('/webhook', express.raw({type: 'application/json'}), (request, response) => {
+  const sig = request.headers['stripe-signature'];
+
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(request.body, sig, endpointSecret);
+  } catch (err) {
+    response.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntentSucceeded = event.data.object;
+      // Then define and call a function to handle the event payment_intent.succeeded
+      break;
+    // ... handle other event types
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+
+  // Return a 200 response to acknowledge receipt of the event
+  response.send();
+});
+
+
+app.use(express.static(path.resolve(__dirname,'build')))
 app.use(cookieParser())
+app.use(express.json())
+app.use(morgan('dev'))
 app.use(
   session({
-    secret: 'keyboard cat',
+    secret: process.env.SESSION_KEY,
     resave: false,
     saveUninitialized: false,
   })
@@ -44,8 +76,7 @@ app.use(
     exposedHeaders: ['X-Total-Count'],
   })
 )
-app.use(express.json())
-app.use(morgan('dev'))
+
 
 app.use('/products', isAuth(), productRouter)
 app.use('/brands', isAuth(), brandRouter)
@@ -77,8 +108,8 @@ passport.use(
           if (!crypto.timingSafeEqual(user.password, hashedPassword)) {
             return done(null, false, { message: 'Invalid credentials' })
           }
-          const token = jwt.sign(sanitizeUser(user), SECRET_KEY)
-          done(null, { id: user.id, role: user.role }) //this calls serializer
+          const token = jwt.sign(sanitizeUser(user), process.env.JWT_SECRET_KEY)
+          done(null, { id: user.id, role: user.role,token:token }) //this calls serializer
         }
       )
     } catch (err) {
@@ -116,11 +147,31 @@ passport.deserializeUser(function (user, cb) {
     return cb(null, user)
   })
 })
+const stripe = require('stripe')(process.env.STRIPE_SERVER_KEY);
 
-app.listen(8080, async () => {
-  console.log('server started')
+app.post("/create-payment-intent", async (req, res) => {
+  const { totalAmount } = req.body;
+
+  // Create a PaymentIntent with the order amount and currency
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: totalAmount*100,
+    currency: "inr",
+    // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+    automatic_payment_methods: {
+      enabled: true,
+    },
+  });
+  res.send({
+    clientSecret: paymentIntent.client_secret,
+  });
+});
+
+
+
+app.listen(process.env.PORT, async () => {
+  console.log('server started '+process.env.PORT)
   try {
-    await mongoose.connect('mongodb://localhost:27017/test', {
+    await mongoose.connect(process.env.MONGODB_URL, {
       autoIndex: true,
     })
     console.log('connected')
