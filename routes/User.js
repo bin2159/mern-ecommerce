@@ -2,7 +2,7 @@ const express=require('express')
 const { fetchUserById, updateUser } = require('../controller/User')
 const router=express.Router()
 
-router.get('/:id',fetchUserById)
-router.patch('/:id',updateUser)
+router.get('/own',fetchUserById)
+router.patch('/update',updateUser)
 
 exports.userRoute=router

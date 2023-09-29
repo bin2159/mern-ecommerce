@@ -3,6 +3,7 @@ const { Product } = require('../model/Product')
 exports.createProduct = async(req, res) => {
   try{
     const product=await Product.create(req.body)
+    console.log(product)
     res.status(201).json(product)
   }
   catch(error){
@@ -59,7 +60,7 @@ exports.fetchAllProductsById=async(req,res)=>{
 }
 
 exports.updateProduct=async(req,res)=>{
-  console.log(req.body)
+  // console.log(req.body)
   try {
   const product=await Product.findByIdAndUpdate(req.params.id,req.body,{new:true})
   res.status(200).json(product)
