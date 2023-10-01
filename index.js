@@ -61,7 +61,6 @@ app.post('/webhook', express.raw({type: 'application/json'}), (request, response
 });
 
 
-app.use(express.static(path.resolve(__dirname,'build')))
 app.use(cookieParser())
 app.use(express.json())
 app.use(morgan('dev'))
